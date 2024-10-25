@@ -1,4 +1,4 @@
-description: MPU 6050 6-axis accelerometer & gyroscope
+description: Custom MPU 6050 6-axis accelerometer & gyroscope
 
 compatible: "zephyr,custom-mpu6050"
 

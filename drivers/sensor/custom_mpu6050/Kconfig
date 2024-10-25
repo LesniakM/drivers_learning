@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config CUSTOM_MPU6050
-	bool "Custom MPU6050 sensor"
-	default y
-	depends on DT_HAS_ZEPHYR_CUSTOM_MPU6050_ENABLED
-	select I2C
-	help
-	  Enable custom MPU6050 driver
+    bool "Custom MPU6050 sensor"
+    default y
+    select I2C
+    depends on SENSOR
+    help
+      Enable custom MPU6050 driver

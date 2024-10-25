@@ -2,5 +2,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 if SENSOR
-rsource "example_sensor/Kconfig"
-endif # SENSOR
+rsource "custom_mpu6050/Kconfig"
+endif # SENSOR 
