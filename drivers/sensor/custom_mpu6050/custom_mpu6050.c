@@ -130,7 +130,7 @@ Such as:
 */
 static void convert_accel(struct sensor_value *val, int16_t raw_val, uint8_t g_range)
 {
-	int32_t converted_val = ((int64_t)raw_val * G_VALUE) >> (15 - __builtin_ctz(g_range));
+	int32_t converted_val = ((int64_t)raw_val * SENSOR_G) >> (15 - __builtin_ctz(g_range));
 	val->val1 = converted_val / 1000000;
 	val->val2 = converted_val % 1000000;
 }
@@ -174,10 +174,11 @@ static int custom_mpu6050_channel_get(const struct device *dev,
 		convert_accel(val, data->accel_x, data->acc_range);
 		convert_accel(val + 1, data->accel_y, data->acc_range);
 		convert_accel(val + 2, data->accel_z, data->acc_range);
-		convert_temp(val + 12, data->temp);
+		convert_temp(val + 3, data->temp);
 		convert_gyro(val + 4, data->gyro_x, data->gyro_shift);
 		convert_gyro(val + 5, data->gyro_y, data->gyro_shift);
 		convert_gyro(val + 6, data->gyro_z, data->gyro_shift);
+		
 		break;
 	case SENSOR_CHAN_ACCEL_Z:
 		convert_accel(val, data->accel_z, data->acc_range);

@@ -10,9 +10,6 @@ Created as part of "nRF Connect SDK Intermediate" course available on Nordic Dev
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
 
-#define G_VALUE_F   9.80665
-#define G_VALUE     980665L
-
 #define MPU6050_GYRO_CONFIG				0x1B
 #define MPU6050_ACCEL_CONFIG			0x1C
 #define MPU6050_ACCEL_CONFIG2			0x1D
