@@ -8,10 +8,10 @@ Created as part of "nRF Connect SDK Intermediate" course available on Nordic Dev
 
 LOG_MODULE_REGISTER(custom_mpu6050, CONFIG_SENSOR_LOG_LEVEL);
 
-int mpu6050_burst_read(const struct device *dev, uint8_t start_reg, uint8_t *data, int size)
+int mpu6050_burst_read(const struct device *dev, uint8_t start_reg, uint8_t *data, uint32_t size)
 {
 	const struct custom_mpu6050_config *cfg = dev->config;
-	int err = i2c_burst_read_dt(&cfg->i2c, start_reg, &data, size);
+	int err = i2c_burst_read_dt(&cfg->i2c, start_reg, data, size);
 	if (err)
 	{
 		LOG_ERR("mpu6050_reg_read/i2c_burst_read_dt() failed, err %d", err);
@@ -77,7 +77,7 @@ static int custom_mpu6050_sample_fetch(const struct device *dev,
 	/* Alternatively static buffer of max size can be used instead of VLA*/
 	uint8_t buffer[end_address - start_address + 1];
 
-	int err = mpu6050_burst_read(&cfg->i2c, start_address, buffer, sizeof(buffer));
+	int err = mpu6050_burst_read(dev, start_address, buffer, sizeof(buffer));
 	if (err < 0)
 	{
 		LOG_ERR("custom_mpu6050_sample_fetch() failed, err %d", err);
@@ -130,9 +130,7 @@ Such as:
 */
 static void convert_accel(struct sensor_value *val, int16_t raw_val, uint8_t g_range)
 {
-	int32_t converted_val = ((int32_t)raw_val * G_VALUE) >> (15 - __builtin_ctz(g_range));
-	printf("\nVal1 %d  Val2 %d\n", converted_val / 1000000, converted_val % 1000000);
-
+	int32_t converted_val = ((int64_t)raw_val * G_VALUE) >> (15 - __builtin_ctz(g_range));
 	val->val1 = converted_val / 1000000;
 	val->val2 = converted_val % 1000000;
 }
@@ -157,9 +155,9 @@ static void convert_gyro(struct sensor_value *val, int16_t raw_val, uint8_t gyro
 /*
 Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/340 + 36.53
 */
-static void convert_temp(struct sensor_value *val, int16_t raw_val, uint8_t g_range)
+static void convert_temp(struct sensor_value *val, int16_t raw_val)
 {
-	int32_t converted_val = raw_val*100000 / 34 + 36530000;
+	int32_t converted_val = (int64_t)raw_val*100000 / 34 + 36530000;
 	val->val1 = converted_val / 1000000;
 	val->val2 = converted_val % 1000000;
 }
@@ -170,17 +168,16 @@ static int custom_mpu6050_channel_get(const struct device *dev,
 {
 	/* STEP 7.2 - Populate the custom_bme280_channel_get() function */
 	struct custom_mpu6050_data *data = dev->data;
-
 	switch (chan)
 	{
 	case SENSOR_CHAN_ALL:
 		convert_accel(val, data->accel_x, data->acc_range);
 		convert_accel(val + 1, data->accel_y, data->acc_range);
 		convert_accel(val + 2, data->accel_z, data->acc_range);
-		convert_temp(val + 12, data->temp, data->acc_range);
-		convert_gyro(val + 4, data->gyro_x, data->acc_range);
-		convert_gyro(val + 5, data->gyro_y, data->acc_range);
-		convert_gyro(val + 6, data->gyro_z, data->acc_range);
+		convert_temp(val + 12, data->temp);
+		convert_gyro(val + 4, data->gyro_x, data->gyro_shift);
+		convert_gyro(val + 5, data->gyro_y, data->gyro_shift);
+		convert_gyro(val + 6, data->gyro_z, data->gyro_shift);
 		break;
 	case SENSOR_CHAN_ACCEL_Z:
 		convert_accel(val, data->accel_z, data->acc_range);
@@ -191,10 +188,16 @@ static int custom_mpu6050_channel_get(const struct device *dev,
 		convert_accel(val + 2, data->accel_z, data->acc_range);
 		break;
 	case SENSOR_CHAN_GYRO_X:
-		convert_gyro(val, data->gyro_x, data->acc_range);
+		convert_gyro(val, data->gyro_x, data->gyro_shift);
 		break;
 	case SENSOR_CHAN_GYRO_Y:
-		convert_gyro(val, data->gyro_y, data->acc_range);
+		convert_gyro(val, data->gyro_y, data->gyro_shift);
+		break;
+	case SENSOR_CHAN_GYRO_Z:
+		convert_gyro(val, data->gyro_z, data->gyro_shift);
+		break;
+	case SENSOR_CHAN_DIE_TEMP:
+		convert_temp(val, data->temp);
 		break;
 	default:
 		LOG_ERR("custom_mpu6050_channel_get() - Channel %d not implemented!", chan);
@@ -205,31 +208,25 @@ static int custom_mpu6050_channel_get(const struct device *dev,
 
 /* STEP 7.3 - Define the sensor driver API */
 static const struct sensor_driver_api custom_mpu6050_api = {
-	.sample_fetch = &custom_mpu6050_sample_fetch,
-	.channel_get = &custom_mpu6050_channel_get,
-};
-__subsystem struct sensor_driver_api
-{
-	sensor_sample_fetch_t sample_fetch;
-	sensor_channel_get_t channel_get;
+	.sample_fetch = custom_mpu6050_sample_fetch,
+	.channel_get = custom_mpu6050_channel_get,
 };
 
 static int custom_mpu6050_init(const struct device *dev)
-{
+{	
+	LOG_INF("custom_mpu6050_init START");
 	struct custom_mpu6050_data *data = dev->data;
 	const struct custom_mpu6050_config *cfg = dev->config;
-
-	data->acc_range = 2;
-	data->gyro_shift = 0;
-
-	if (!device_is_ready(&cfg->i2c.bus)) {
+	if (!device_is_ready(cfg->i2c.bus)) {
 		LOG_ERR("Bus device is not ready");
 		return -ENODEV;
 	}
-
-	mpu6050_reg_write(&cfg->i2c, MPU6050_REG_PWR_MGMT_1, 0);
+	LOG_INF("Bus device is ready!");
+	data->acc_range = 2;
+	data->gyro_shift = 0;
+	mpu6050_reg_write(dev, MPU6050_REG_PWR_MGMT_1, 0);
 	k_msleep(1);
-	
+	LOG_INF("custom_mpu6050_init END");
 	return 0;
 }
 

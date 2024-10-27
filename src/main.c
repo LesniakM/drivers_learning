@@ -25,11 +25,13 @@ int main(void)
 		LOG_INF("Error: I2C device is not ready, err: %d", err);
 		return 0;
 	}
-
+	LOG_INF("Device is ready!");
 	while (1)
 	{
 		/* Continuously read out sensor data using the sensor API calls */
+		LOG_INF("Sample fetch...");
 		err = sensor_sample_fetch(dev);
+		LOG_INF("Got the sample!");
 		if (err < 0)
 		{
 			LOG_ERR("Could not fetch sample (%d)", err);
@@ -38,26 +40,26 @@ int main(void)
 		/* Convert acc on Z axis*/
 		if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Z, &acc_z_val))
 		{
-			LOG_ERR("Could not get sample");
-			return 0;
+			LOG_ERR("Could not get acc Z sample");
+			//return 0;
 		}
 		/* Convert gyro on Z axis*/
 		if (sensor_channel_get(dev, SENSOR_CHAN_GYRO_Z, &gyro_z_val))
 		{
-			LOG_ERR("Could not get sample");
-			return 0;
+			LOG_ERR("Could not get gyro Z sample");
+			//return 0;
 		}
 		/* Convert temperature*/
 		if (sensor_channel_get(dev, SENSOR_CHAN_DIE_TEMP, &temp_val))
 		{
-			LOG_ERR("Could not get sample");
-			return 0;
+			LOG_ERR("Could not get temp sample");
+			//return 0;
 		}
 
 		LOG_INF("Acc z values: %d.%d", acc_z_val.val1, acc_z_val.val2);
 		LOG_INF("Gyro z values: %d.%d", gyro_z_val.val1, gyro_z_val.val2);
 		LOG_INF("Temperature values: %d.%d *C", temp_val.val1, temp_val.val2);
-		k_sleep(K_MSEC(1000));
+		k_sleep(K_MSEC(3000));
 	}
 
 	return 0;
