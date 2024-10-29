@@ -1,4 +1,1 @@
-# Copyright (c) 2021 Nordic Semiconductor ASA
-# SPDX-License-Identifier: Apache-2.0
-
-add_subdirectory(custom_mpu6050)
+add_subdirectory_ifdef(CONFIG_CUSTOM_MPU6050 custom_mpu6050)

@@ -4,4 +4,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(driver_lesson)
 
 target_sources(app PRIVATE src/main.c)
-zephyr_library_sources(drivers/sensor/custom_mpu6050/custom_mpu6050.c)
+add_subdirectory(drivers)

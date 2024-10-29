@@ -1,5 +1,6 @@
 /*
 Created as part of "nRF Connect SDK Intermediate" course available on Nordic Dev Academy
+https://academy.nordicsemi.com/courses/nrf-connect-sdk-intermediate/lessons/lesson-7-device-driver-model/topic/exercise-1-13/
 */
 
 #include <zephyr/sys/byteorder.h>
@@ -24,7 +25,6 @@ int mpu6050_reg_write(const struct device *dev, uint8_t reg, uint8_t value)
 {
 	const struct custom_mpu6050_config *cfg = dev->config;
 	int err;
-	// (const struct i2c_dt_spec *spec, uint8_t reg_addr, uint8_t value)
 
 	err = i2c_reg_write_byte_dt(&cfg->i2c, reg, value);
 	if (err)
@@ -50,7 +50,6 @@ int mpu6050_reg_write(const struct device *dev, uint8_t reg, uint8_t value)
 static int custom_mpu6050_sample_fetch(const struct device *dev,
 									   enum sensor_channel chan)
 {
-	const struct custom_mpu6050_config *cfg = dev->config;
 	struct custom_mpu6050_data *data = dev->data;
 
 	uint8_t start_address = 0;
@@ -207,7 +206,7 @@ static int custom_mpu6050_channel_get(const struct device *dev,
 	return 0;
 }
 
-/* STEP 7.3 - Define the sensor driver API */
+/* Define the sensor driver API */
 static const struct sensor_driver_api custom_mpu6050_api = {
 	.sample_fetch = custom_mpu6050_sample_fetch,
 	.channel_get = custom_mpu6050_channel_get,
@@ -232,7 +231,7 @@ static int custom_mpu6050_init(const struct device *dev)
 }
 
 
-/* STEP 8 - Define a macro for the device driver instance */
+/* Define a macro for the device driver instance */
 #define CUSTOM_MPU6050_DEFINE(inst)												\
 	static struct custom_mpu6050_data custom_mpu6050_data_##inst;					\
 	static const struct custom_mpu6050_config custom_mpu6050_config_##inst = {	\
@@ -247,74 +246,5 @@ static int custom_mpu6050_init(const struct device *dev)
 				CONFIG_SENSOR_INIT_PRIORITY, 									\
 				&custom_mpu6050_api);
 
-/* STEP 9 - Create the struct device for every status "okay" node in the devicetree */
+/* Create the struct device for every status "okay" node in the devicetree */
 DT_INST_FOREACH_STATUS_OKAY(CUSTOM_MPU6050_DEFINE)
-/*
-#define DT_DRV_COMPAT zephyr_example_sensor
-
-
-static int example_sensor_sample_fetch(const struct device *dev,
-					  enum sensor_channel chan)
-{
-	const struct example_sensor_config *config = dev->config;
-	struct example_sensor_data *data = dev->data;
-
-	data->state = gpio_pin_get_dt(&config->input);
-
-	return 0;
-}
-
-static int example_sensor_channel_get(const struct device *dev,
-					 enum sensor_channel chan,
-					 struct sensor_value *val)
-{
-	struct example_sensor_data *data = dev->data;
-
-	if (chan != SENSOR_CHAN_PROX) {
-		return -ENOTSUP;
-	}
-
-	val->val1 = data->state;
-
-	return 0;
-}
-
-static const struct sensor_driver_api example_sensor_api = {
-	.sample_fetch = &example_sensor_sample_fetch,
-	.channel_get = &example_sensor_channel_get,
-};
-
-static int example_sensor_init(const struct device *dev)
-{
-	const struct example_sensor_config *config = dev->config;
-
-	int ret;
-
-	if (!device_is_ready(config->input.port)) {
-		LOG_ERR("Input GPIO not ready");
-		return -ENODEV;
-	}
-
-	ret = gpio_pin_configure_dt(&config->input, GPIO_INPUT);
-	if (ret < 0) {
-		LOG_ERR("Could not configure input GPIO (%d)", ret);
-		return ret;
-	}
-
-	return 0;
-}
-
-#define EXAMPLE_SENSOR_INIT(i)						       \
-	static struct example_sensor_data example_sensor_data_##i;	       \
-										   \
-	static const struct example_sensor_config example_sensor_config_##i = {\
-		.input = GPIO_DT_SPEC_INST_GET(i, input_gpios),		       \
-	};								       \
-										   \
-	DEVICE_DT_INST_DEFINE(i, example_sensor_init, NULL,		       \
-				  &example_sensor_data_##i,			       \
-				  &example_sensor_config_##i, POST_KERNEL,	       \
-				  CONFIG_SENSOR_INIT_PRIORITY, &example_sensor_api);
-
-DT_INST_FOREACH_STATUS_OKAY(EXAMPLE_SENSOR_INIT)
-*/
